@@ -271,16 +271,9 @@ static kip1_patchset_t _fs_patches_200[] =
 	{ NULL, NULL }
 };
 
-static kip1_patch_t _fs_nosigchk_210[] = 
-{
-	{ KPS(KIP_TEXT) | 0x15F64, 4, "\xDF\x0A\x00\x94", "\xE0\x03\x1F\x2A" },
-	{ KPS(KIP_TEXT) | 0x3FAF8, 4, "\x00\x06\x00\x36", "\x1F\x20\x03\xD5" },
-	{ 0, 0, NULL, NULL }
-};
-
 static kip1_patchset_t _fs_patches_210[] = 
 {
-	{ "nosigchk", _fs_nosigchk_210 },
+	{ "nosigchk", NULL },
 	{ "nogc",     NULL },
 	{ NULL, NULL }
 };
@@ -382,11 +375,17 @@ static kip1_patch_t _fs_nogc_510[] =
 	{ KPS(KIP_TEXT) | 0xD7770, 8, "\xF4\x4F\xBE\xA9\xFD\x7B\x01\xA9", "\xE0\x03\x1F\x2A\xC0\x03\x5F\xD6" },
 	{ 0, 0, NULL, NULL }
 };
+static kip1_patch_t _fs_repack_510[] = 
+{
+	{ KPS(KIP_TEXT) | 0x22E98, 4, "\x9A\xE3\xFF\x97", "\x1F\x20\x03\xD5" },
+	{ 0, 0, NULL, NULL }
+};
 
 static kip1_patchset_t _fs_patches_510[] = 
 {
 	{ "nosigchk", _fs_nosigchk_510 },
 	{ "nogc",     _fs_nogc_510 },
+	{ "repack",     _fs_repack_510 },
 	{ NULL, NULL }
 };
 
