@@ -4,15 +4,17 @@ endif
 
 include $(DEVKITARM)/base_rules
 
-TARGET := ipl
-BUILD := build_ipl
-SOURCEDIR := ipl
-OBJS = $(addprefix $(BUILD)/, \
+TARGET := hekate
+BUILD := build
+OUTPUT := output
+SOURCEDIR = bootloader
+VPATH = $(dir $(wildcard ./$(SOURCEDIR)/*/)) $(dir $(wildcard ./$(SOURCEDIR)/*/*/))
+
+OBJS = $(addprefix $(BUILD)/$(TARGET)/, \
 	start.o \
 	main.o \
 	config.o \
 	btn.o \
-	blz.o \
 	clock.o \
 	cluster.o \
 	fuse.o \
@@ -21,7 +23,6 @@ OBJS = $(addprefix $(BUILD)/, \
 	hos.o \
 	i2c.o \
 	kfuse.o \
-	lz.o \
 	bq24193.o \
 	max7762x.o \
 	max17050.o \
@@ -43,34 +44,46 @@ OBJS = $(addprefix $(BUILD)/, \
 	uart.o \
 	ini.o \
 )
-OBJS += $(addprefix $(BUILD)/, diskio.o ff.o ffunicode.o ffsystem.o)
+
+OBJS += $(addprefix $(BUILD)/$(TARGET)/, \
+	lz.o blz.o \
+	diskio.o ff.o ffunicode.o ffsystem.o \
+	elfload.o elfreloc_arm.o \
+)
 
 ARCH := -march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
-CUSTOMDEFINES := -DMENU_LOGO_ENABLE
-CFLAGS = $(ARCH) -O2 -nostdlib -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-inline -std=gnu11 -Wall $(CUSTOMDEFINES)
+CUSTOMDEFINES := -DSPLASH_ENABLE -DMENU_LOGO_ENABLE #-DDEBUG
+CFLAGS = $(ARCH) -O2 -nostdlib -flto -ffunction-sections -fdata-sections -fomit-frame-pointer -fno-inline -std=gnu11 -Wall $(CUSTOMDEFINES)
 LDFLAGS = $(ARCH) -nostartfiles -lgcc -Wl,--nmagic,--gc-sections
 
-.PHONY: all clean
+MODULEDIRS := $(wildcard modules/*)
+
+.PHONY: all clean $(MODULEDIRS)
 
 all: $(TARGET).bin
 	@echo -n "Payload size is "
-	@wc -c < $(TARGET).bin
+	@wc -c < $(OUTPUT)/$(TARGET).bin
 	@echo "Max size is 126296 Bytes."
 
 clean:
 	@rm -rf $(OBJS)
 	@rm -rf $(BUILD)
-	@rm -rf $(TARGET).bin
+	@rm -rf $(OUTPUT)
 
-$(TARGET).bin: $(BUILD)/$(TARGET).elf
-	$(OBJCOPY) -S -O binary $< $@
+$(MODULEDIRS):
+	$(MAKE) -C $@ $(MAKECMDGOALS)
 
-$(BUILD)/$(TARGET).elf: $(OBJS)
-	$(CC) $(LDFLAGS) -T ipl/link.ld $^ -o $@
+$(TARGET).bin: $(BUILD)/$(TARGET)/$(TARGET).elf $(MODULEDIRS)
+	$(OBJCOPY) -S -O binary $< $(OUTPUT)/$@
 
-$(BUILD)/%.o: $(SOURCEDIR)/%.c
+$(BUILD)/$(TARGET)/$(TARGET).elf: $(OBJS)
+	$(CC) $(LDFLAGS) -T $(SOURCEDIR)/link.ld $^ -o $@
+
+$(BUILD)/$(TARGET)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD)/%.o: $(SOURCEDIR)/%.S
+$(BUILD)/$(TARGET)/%.o: %.S
 	@mkdir -p "$(BUILD)"
+	@mkdir -p "$(BUILD)/$(TARGET)"
+	@mkdir -p "$(OUTPUT)"
 	$(CC) $(CFLAGS) -c $< -o $@
